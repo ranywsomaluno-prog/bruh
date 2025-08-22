@@ -14,7 +14,7 @@ local Window = Rayfield:CreateWindow({
 })
 
 -- Criar Aba Principal
-local MainTab = Window:CreateTab("Controle", 4483362458) -- ícone exemplo
+local MainTab = Window:CreateTab("Controle", 4483362458)
 local Section = MainTab:CreateSection("Executar Ação")
 
 -- Localizar o RemoteEvent
@@ -23,7 +23,7 @@ local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmit
 
 -- Variáveis de controle
 local AutoExecutar = false
-local Velocidade = 1 -- tempo em segundos
+local Velocidade = 1
 
 -- Função que dispara o RemoteEvent
 local function ExecutarAcao()
@@ -42,7 +42,7 @@ MainTab:CreateToggle({
         if AutoExecutar then
             task.spawn(function()
                 while AutoExecutar do
-                    ExecutarAcao() -- Dispara o RemoteEvent
+                    ExecutarAcao()
                     task.wait(Velocidade)
                 end
             end)
@@ -53,7 +53,7 @@ MainTab:CreateToggle({
 -- Slider para velocidade
 MainTab:CreateSlider({
     Name = "Velocidade de Execução",
-    Range = {0.1, 5}, -- intervalo mínimo/máximo
+    Range = {0.1, 5},
     Increment = 0.1,
     Suffix = "s",
     CurrentValue = 1,
@@ -63,84 +63,86 @@ MainTab:CreateSlider({
     end,
 })
 
--- Botão para execução única (opcional)
+-- Botão para execução única
 MainTab:CreateButton({
     Name = "Executar Agora (Uma vez)",
     Callback = function()
-        ExecutarAcao() -- Dispara o RemoteEvent uma vez
+        ExecutarAcao()
     end
 })
 
 -- Criar Aba do Player
-local PlayerTab = Window:CreateTab("Player", 4483362458) -- ícone exemplo
+local PlayerTab = Window:CreateTab("Player", 4483362458)
 local PlayerSection = PlayerTab:CreateSection("Modificações do Player")
 
 -- Variável para controle do Infinite Jump
 local InfiniteJumpEnabled = false
+local JumpConnection = nil
 
--- Função para configurar a velocidade do jogador
+-- Função para configurar a velocidade do jogador (versão simplificada)
 local function SetPlayerSpeed()
-    Rayfield:ShowDialog({
-        Title = "Definir Velocidade",
-        Content = "Digite o valor da velocidade desejada:",
-        Buttons = {
-            {
-                Name = "Confirmar",
-                Callback = function()
-                    local speed = tonumber(Dialog:GetInput())
+    Rayfield:Prompt({
+        Title = 'Definir Velocidade',
+        SubTitle = 'Digite o valor da velocidade:',
+        Actions = {
+            Accept = {
+                Name = 'Confirmar',
+                Callback = function(input)
+                    local speed = tonumber(input)
                     if speed and speed > 0 then
-                        game.Players.LocalPlayer.Character:WaitForChild("Humanoid").WalkSpeed = speed
-                        Rayfield:Notify({
-                            Title = "Velocidade Alterada",
-                            Content = "Velocidade definida para: " .. speed,
-                            Duration = 3,
-                            Image = 4483362458,
-                        })
+                        local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                        if humanoid then
+                            humanoid.WalkSpeed = speed
+                            Rayfield:Notify({
+                                Title = "Sucesso",
+                                Content = "Velocidade definida para: " .. speed,
+                                Duration = 3
+                            })
+                        end
                     else
                         Rayfield:Notify({
                             Title = "Erro",
-                            Content = "Por favor, digite um número válido maior que 0",
-                            Duration = 3,
-                            Image = 4483362458,
+                            Content = "Digite um número válido!",
+                            Duration = 3
                         })
                     end
-                end,
+                end
             },
-            {
-                Name = "Cancelar",
+            Decline = {
+                Name = 'Cancelar',
                 Callback = function()
                     -- Não faz nada
-                end,
+                end
             }
-        },
-        Input = true
+        }
     })
 end
 
--- Função para ativar/desativar Infinite Jump
+-- Função para Infinite Jump
 local function ToggleInfiniteJump()
-    InfiniteJumpEnabled = not InfiniteJumpEnabled
+    if JumpConnection then
+        JumpConnection:Disconnect()
+        JumpConnection = nil
+    end
     
     if InfiniteJumpEnabled then
-        -- Conectar ao evento de pulo
-        game:GetService("UserInputService").JumpRequest:Connect(function()
-            if InfiniteJumpEnabled then
-                game:GetService("Players").LocalPlayer.Character:WaitForChild("Humanoid"):ChangeState("Jumping")
+        JumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+            local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+            if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
+                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
             end
         end)
         
         Rayfield:Notify({
-            Title = "Infinite Jump",
-            Content = "Ativado - Pressione Espaço para pular infinitamente",
-            Duration = 3,
-            Image = 4483362458,
+            Title = "Infinite Jump Ativado",
+            Content = "Pressione Espaço para pular infinitamente",
+            Duration = 3
         })
     else
         Rayfield:Notify({
-            Title = "Infinite Jump",
-            Content = "Desativado",
-            Duration = 3,
-            Image = 4483362458,
+            Title = "Infinite Jump Desativado",
+            Content = "Pulo infinito desligado",
+            Duration = 3
         })
     end
 end
@@ -148,9 +150,7 @@ end
 -- Botão para definir velocidade do jogador
 PlayerTab:CreateButton({
     Name = "Definir Velocidade",
-    Callback = function()
-        SetPlayerSpeed()
-    end
+    Callback = SetPlayerSpeed
 })
 
 -- Toggle para Infinite Jump
@@ -160,5 +160,20 @@ PlayerTab:CreateToggle({
     Callback = function(Value)
         InfiniteJumpEnabled = Value
         ToggleInfiniteJump()
+    end,
+})
+
+-- Adicionar também um slider para velocidade mais fácil
+PlayerTab:CreateSlider({
+    Name = "Velocidade do Personagem",
+    Range = {16, 100},
+    Increment = 1,
+    Suffix = "está",
+    CurrentValue = 16,
+    Callback = function(Value)
+        local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = Value
+        end
     end,
 })
