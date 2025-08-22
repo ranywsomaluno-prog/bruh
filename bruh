@@ -20,6 +20,7 @@ local Section = MainTab:CreateSection("Executar Ação")
 -- Localizar o RemoteEvent
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmitAllPlant
+local RecallWrenchTeleport = ReplicatedStorage.GameEvents.RecallWrenchTeleport
 
 -- Variáveis de controle
 local AutoExecutar = false
@@ -30,6 +31,12 @@ local AutoTask = nil
 local function ExecutarAcao()
     BeanstalkRESubmitAllPlant:FireServer()
     print("RemoteEvent BeanstalkRESubmitAllPlant disparado!")
+end
+
+-- Função que dispara o RecallWrenchTeleport
+local function ExecutarRecallWrench()
+    RecallWrenchTeleport:FireServer()
+    print("RemoteEvent RecallWrenchTeleport disparado!")
 end
 
 -- Toggle para loop
@@ -71,11 +78,19 @@ MainTab:CreateSlider({
     end,
 })
 
--- Botão para execução única
+-- Botão para execução única do Beanstalk
 MainTab:CreateButton({
-    Name = "Executar Agora (Uma vez)",
+    Name = "Executar Beanstalk (Uma vez)",
     Callback = function()
         ExecutarAcao()
+    end
+})
+
+-- Botão para execução única do RecallWrenchTeleport
+MainTab:CreateButton({
+    Name = "Executar RecallWrenchTeleport",
+    Callback = function()
+        ExecutarRecallWrench()
     end
 })
 
@@ -205,38 +220,4 @@ end
 PlayerTab:CreateButton({
     Name = "Definir Velocidade",
     Callback = SetPlayerSpeed
-})
-
--- Adicionar slider para altura do pulo
-PlayerTab:CreateSlider({
-    Name = "Altura do Pulo",
-    Range = {50, 100},
-    Increment = 1,
-    Suffix = "está",
-    CurrentValue = 50,
-    Callback = function(Value)
-        local character = game.Players.LocalPlayer.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.JumpPower = Value
-            end
-        end
-    end,
-})
-
--- Função para resetar personagem
-PlayerTab:CreateButton({
-    Name = "Resetar Personagem",
-    Callback = function()
-        local player = game.Players.LocalPlayer
-        if player then
-            player.Character:BreakJoints()
-            Rayfield:Notify({
-                Title = "Personagem Resetado",
-                Content = "Seu personagem será respawnado em breve",
-                Duration = 3
-            })
-        end
-    end
 })
