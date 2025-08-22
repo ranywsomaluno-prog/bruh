@@ -17,37 +17,38 @@ local Window = Rayfield:CreateWindow({
 local MainTab = Window:CreateTab("Controle", 4483362458)
 local Section = MainTab:CreateSection("Executar Ação")
 
--- Localizar os RemoteEvents
+-- Localizar o RemoteEvent
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmitAllPlant
-local BuySeedStock = ReplicatedStorage.GameEvents.BuySeedStock
 
 -- Variáveis de controle
 local AutoExecutar = false
 local Velocidade = 1
+local AutoTask = nil
 
--- Função que dispara o RemoteEvent Beanstalk
+-- Função que dispara o RemoteEvent
 local function ExecutarAcao()
     BeanstalkRESubmitAllPlant:FireServer()
     print("RemoteEvent BeanstalkRESubmitAllPlant disparado!")
 end
 
--- Função que dispara o RemoteEvent BuySeedStock
-local function ComprarSemente()
-    BuySeedStock:FireServer()
-    print("RemoteEvent BuySeedStock disparado!")
-end
-
--- Toggle para loop do Beanstalk
+-- Toggle para loop
 MainTab:CreateToggle({
     Name = "Executar Repetidamente",
     CurrentValue = false,
     Callback = function(Value)
         AutoExecutar = Value
+        
+        -- Parar task anterior se existir
+        if AutoTask then
+            task.cancel(AutoTask)
+            AutoTask = nil
+        end
+        
         print("AutoExecutar:", Value)
 
         if AutoExecutar then
-            task.spawn(function()
+            AutoTask = task.spawn(function()
                 while AutoExecutar do
                     ExecutarAcao()
                     task.wait(Velocidade)
@@ -70,19 +71,11 @@ MainTab:CreateSlider({
     end,
 })
 
--- Botão para execução única do Beanstalk
+-- Botão para execução única
 MainTab:CreateButton({
-    Name = "Executar Beanstalk (Uma vez)",
+    Name = "Executar Agora (Uma vez)",
     Callback = function()
         ExecutarAcao()
-    end
-})
-
--- Botão para comprar semente
-MainTab:CreateButton({
-    Name = "Comprar Semente (BuySeedStock)",
-    Callback = function()
-        ComprarSemente()
     end
 })
 
@@ -93,6 +86,66 @@ local PlayerSection = PlayerTab:CreateSection("Modificações do Player")
 -- Variável para controle do Infinite Jump
 local InfiniteJumpEnabled = false
 local JumpConnection = nil
+
+-- Função para Infinite Jump
+local function ToggleInfiniteJump()
+    if JumpConnection then
+        JumpConnection:Disconnect()
+        JumpConnection = nil
+    end
+    
+    if InfiniteJumpEnabled then
+        JumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
+            local character = game.Players.LocalPlayer.Character
+            if character then
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
+                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                end
+            end
+        end)
+        
+        Rayfield:Notify({
+            Title = "Infinite Jump Ativado",
+            Content = "Pressione Espaço para pular infinitamente",
+            Duration = 3
+        })
+    else
+        Rayfield:Notify({
+            Title = "Infinite Jump Desativado",
+            Content = "Pulo infinito desligado",
+            Duration = 3
+        })
+    end
+end
+
+-- Toggle para Infinite Jump (PRIMEIRO)
+PlayerTab:CreateToggle({
+    Name = "Infinite Jump",
+    CurrentValue = false,
+    Callback = function(Value)
+        InfiniteJumpEnabled = Value
+        ToggleInfiniteJump()
+    end,
+})
+
+-- Slider para velocidade (SEGUNDO)
+PlayerTab:CreateSlider({
+    Name = "Velocidade do Personagem",
+    Range = {16, 100},
+    Increment = 1,
+    Suffix = "está",
+    CurrentValue = 16,
+    Callback = function(Value)
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.WalkSpeed = Value
+            end
+        end
+    end,
+})
 
 -- Função para configurar a velocidade do jogador
 local function SetPlayerSpeed()
@@ -105,12 +158,27 @@ local function SetPlayerSpeed()
                 Callback = function(input)
                     local speed = tonumber(input)
                     if speed and speed > 0 then
-                        local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-                        if humanoid then
-                            humanoid.WalkSpeed = speed
+                        local character = game.Players.LocalPlayer.Character
+                        if character then
+                            local humanoid = character:FindFirstChildOfClass("Humanoid")
+                            if humanoid then
+                                humanoid.WalkSpeed = speed
+                                Rayfield:Notify({
+                                    Title = "Sucesso",
+                                    Content = "Velocidade definida para: " .. speed,
+                                    Duration = 3
+                                })
+                            else
+                                Rayfield:Notify({
+                                    Title = "Erro",
+                                    Content = "Humanoid não encontrado!",
+                                    Duration = 3
+                                })
+                            end
+                        else
                             Rayfield:Notify({
-                                Title = "Sucesso",
-                                Content = "Velocidade definida para: " .. speed,
+                                Title = "Erro",
+                                Content = "Personagem não encontrado!",
                                 Duration = 3
                             })
                         end
@@ -133,62 +201,42 @@ local function SetPlayerSpeed()
     })
 end
 
--- Função para Infinite Jump
-local function ToggleInfiniteJump()
-    if JumpConnection then
-        JumpConnection:Disconnect()
-        JumpConnection = nil
-    end
-    
-    if InfiniteJumpEnabled then
-        JumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
-            local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-            if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
-                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-            end
-        end)
-        
-        Rayfield:Notify({
-            Title = "Infinite Jump Ativado",
-            Content = "Pressione Espaço para pular infinitamente",
-            Duration = 3
-        })
-    else
-        Rayfield:Notify({
-            Title = "Infinite Jump Desativado",
-            Content = "Pulo infinito desligado",
-            Duration = 3
-        })
-    end
-end
-
--- Botão para definir velocidade do jogador
+-- Botão para definir velocidade do jogador (TERCEIRO)
 PlayerTab:CreateButton({
     Name = "Definir Velocidade",
     Callback = SetPlayerSpeed
 })
 
--- Toggle para Infinite Jump
-PlayerTab:CreateToggle({
-    Name = "Infinite Jump",
-    CurrentValue = false,
+-- Adicionar slider para altura do pulo
+PlayerTab:CreateSlider({
+    Name = "Altura do Pulo",
+    Range = {50, 100},
+    Increment = 1,
+    Suffix = "está",
+    CurrentValue = 50,
     Callback = function(Value)
-        InfiniteJumpEnabled = Value
-        ToggleInfiniteJump()
+        local character = game.Players.LocalPlayer.Character
+        if character then
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = Value
+            end
+        end
     end,
 })
 
--- Slider para velocidade do personagem
-PlayerTab:CreateSlider({
-    Name = "Velocidade do Personagem",
-    Range = {16, 100},
-    Increment = 1,
-    Suffix = "está",
-    CurrentValue = 16,
-    Callback = function(Value)
-        local humanoid = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
-        if humanoid then
-            humanoid.WalkSpeed = Value
+-- Função para resetar personagem
+PlayerTab:CreateButton({
+    Name = "Resetar Personagem",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        if player then
+            player.Character:BreakJoints()
+            Rayfield:Notify({
+                Title = "Personagem Resetado",
+                Content = "Seu personagem será respawnado em breve",
+                Duration = 3
+            })
         end
-    end,
+    end
 })
