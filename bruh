@@ -17,13 +17,18 @@ local Window = Rayfield:CreateWindow({
 local MainTab = Window:CreateTab("Controle", 4483362458) -- ícone exemplo
 local Section = MainTab:CreateSection("Executar Ação")
 
+-- Localizar o RemoteEvent
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmitAllPlant
+
 -- Variáveis de controle
 local AutoExecutar = false
 local Velocidade = 1 -- tempo em segundos
 
--- Função simulada (aqui você substituiria pelo que quiser executar)
+-- Função que dispara o RemoteEvent
 local function ExecutarAcao()
-    print("Executando ação simulada...")
+    BeanstalkRESubmitAllPlant:FireServer()
+    print("RemoteEvent BeanstalkRESubmitAllPlant disparado!")
 end
 
 -- Toggle para loop
@@ -37,7 +42,7 @@ MainTab:CreateToggle({
         if AutoExecutar then
             task.spawn(function()
                 while AutoExecutar do
-                    ExecutarAcao()
+                    ExecutarAcao() -- Dispara o RemoteEvent
                     task.wait(Velocidade)
                 end
             end)
@@ -56,4 +61,12 @@ MainTab:CreateSlider({
         Velocidade = Value
         print("Velocidade ajustada para:", Value, "segundos")
     end,
+})
+
+-- Botão para execução única (opcional)
+MainTab:CreateButton({
+    Name = "Executar Agora (Uma vez)",
+    Callback = function()
+        ExecutarAcao() -- Dispara o RemoteEvent uma vez
+    end
 })
