@@ -21,11 +21,20 @@ local Section = MainTab:CreateSection("Executar Ação")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmitAllPlant
 local UnlockSlotFromPet = ReplicatedStorage.GameEvents.UnlockSlotFromPet
+local Plant_RE = ReplicatedStorage.GameEvents.Plant_RE
+local Sell_Inventory = ReplicatedStorage.GameEvents.Sell_Inventory
+local BuySeedStock = ReplicatedStorage.GameEvents.BuySeedStock
 
 -- Variáveis de controle
 local AutoExecutar = false
 local Velocidade = 1
 local AutoTask = nil
+
+-- Variáveis para as novas funcionalidades
+local AutoPlantEnabled = false
+local AutoHarvestEnabled = false
+local AutoBuyEnabled = false
+local SelectedSeed = ""
 
 -- Função que dispara o RemoteEvent
 local function ExecutarAcao()
@@ -37,6 +46,166 @@ end
 local function ExecutarUnlockSlot()
     UnlockSlotFromPet:FireServer()
     print("RemoteEvent UnlockSlotFromPet disparado!")
+end
+
+-- Funções extraídas do script analisado
+local function GetFarm()
+    local Farms = workspace.Farm:GetChildren()
+    local LocalPlayer = game.Players.LocalPlayer
+    
+    for _, Farm in next, Farms do
+        local Important = Farm.Important
+        local Data = Important.Data
+        local Owner = Data.Owner
+        
+        if Owner.Value == LocalPlayer.Name then
+            return Farm
+        end
+    end
+    return nil
+end
+
+local function GetSeedStock()
+    local SeedStock = {}
+    local SeedShop = game.Players.LocalPlayer.PlayerGui.Seed_Shop
+    local Items = SeedShop:FindFirstChild("Blueberry", true).Parent
+    
+    for _, Item in next, Items:GetChildren() do
+        local MainFrame = Item:FindFirstChild("Main_Frame")
+        if not MainFrame then continue end
+        
+        local StockText = MainFrame.Stock_Text.Text
+        local StockCount = tonumber(StockText:match("%d+"))
+        
+        SeedStock[Item.Name] = StockCount
+    end
+    
+    return SeedStock
+end
+
+local function BuySeed(Seed)
+    BuySeedStock:FireServer(Seed)
+end
+
+local function BuyAllSelectedSeeds()
+    local Stock = GetSeedStock()[SelectedSeed]
+    if not Stock or Stock <= 0 then return end
+    
+    for i = 1, Stock do
+        BuySeed(SelectedSeed)
+        wait(0.1)
+    end
+end
+
+local function Plant(Position, Seed)
+    Plant_RE:FireServer(Position, Seed)
+    wait(0.3)
+end
+
+local function GetRandomFarmPoint()
+    local MyFarm = GetFarm()
+    if not MyFarm then return Vector3.new(0, 0, 0) end
+    
+    local PlantLocations = MyFarm.Important.Plant_Locations
+    local FarmLands = PlantLocations:GetChildren()
+    local FarmLand = FarmLands[math.random(1, #FarmLands)]
+    
+    local function GetArea(Base)
+        local Center = Base:GetPivot()
+        local Size = Base.Size
+        
+        local X1 = math.ceil(Center.X - (Size.X/2))
+        local Z1 = math.ceil(Center.Z - (Size.Z/2))
+        local X2 = math.floor(Center.X + (Size.X/2))
+        local Z2 = math.floor(Center.Z + (Size.Z/2))
+        
+        return X1, Z1, X2, Z2
+    end
+    
+    local X1, Z1, X2, Z2 = GetArea(FarmLand)
+    local X = math.random(X1, X2)
+    local Z = math.random(Z1, Z2)
+    
+    return Vector3.new(X, 4, Z)
+end
+
+local function AutoPlantLoop()
+    if not SelectedSeed or SelectedSeed == "" then
+        print("Selecione uma semente primeiro!")
+        return
+    end
+    
+    local Stock = GetSeedStock()[SelectedSeed]
+    if not Stock or Stock <= 0 then
+        print("Sem estoque da semente selecionada!")
+        return
+    end
+    
+    for i = 1, Stock do
+        if not AutoPlantEnabled then break end
+        
+        local Point = GetRandomFarmPoint()
+        Plant(Point, SelectedSeed)
+    end
+end
+
+local function HarvestPlant(Plant)
+    local Prompt = Plant:FindFirstChild("ProximityPrompt", true)
+    if not Prompt then return end
+    
+    fireproximityprompt(Prompt)
+end
+
+local function GetHarvestablePlants()
+    local Plants = {}
+    local MyFarm = GetFarm()
+    if not MyFarm then return Plants end
+    
+    local PlantsPhysical = MyFarm.Important.Plants_Physical
+    local Character = game.Players.LocalPlayer.Character
+    local PlayerPosition = Character:GetPivot().Position
+    
+    local function CollectHarvestable(Parent, PlantsList)
+        for _, Plant in next, Parent:GetChildren() do
+            local Fruits = Plant:FindFirstChild("Fruits")
+            if Fruits then
+                CollectHarvestable(Fruits, PlantsList)
+            end
+            
+            local PlantPosition = Plant:GetPivot().Position
+            local Distance = (PlayerPosition - PlantPosition).Magnitude
+            if Distance > 15 then continue end
+            
+            local Prompt = Plant:FindFirstChild("ProximityPrompt", true)
+            if Prompt and Prompt.Enabled then
+                table.insert(PlantsList, Plant)
+            end
+        end
+        return PlantsList
+    end
+    
+    return CollectHarvestable(PlantsPhysical, Plants)
+end
+
+local function HarvestPlants()
+    local Plants = GetHarvestablePlants()
+    for _, Plant in next, Plants do
+        HarvestPlant(Plant)
+    end
+end
+
+local function AutoHarvestLoop()
+    while AutoHarvestEnabled do
+        HarvestPlants()
+        wait(1)
+    end
+end
+
+local function AutoBuyLoop()
+    while AutoBuyEnabled do
+        BuyAllSelectedSeeds()
+        wait(5) -- Verifica a cada 5 segundos
+    end
 end
 
 -- Toggle para loop
@@ -94,6 +263,90 @@ MainTab:CreateButton({
     end
 })
 
+-- Nova seção para as funcionalidades extraídas
+local FarmSection = MainTab:CreateSection("Farm Automático")
+
+-- Seleção de semente
+local seedOptions = {}
+local function UpdateSeedOptions()
+    seedOptions = {}
+    local stock = GetSeedStock()
+    for seedName, _ in pairs(stock) do
+        table.insert(seedOptions, seedName)
+    end
+end
+
+UpdateSeedOptions()
+
+MainTab:CreateDropdown({
+    Name = "Selecionar Semente",
+    Options = seedOptions,
+    CurrentOption = "",
+    Callback = function(Option)
+        SelectedSeed = Option
+        print("Semente selecionada:", SelectedSeed)
+    end,
+})
+
+-- Botão para atualizar lista de sementes
+MainTab:CreateButton({
+    Name = "Atualizar Lista de Sementes",
+    Callback = UpdateSeedOptions
+})
+
+-- Toggle para Plantio Automático
+MainTab:CreateToggle({
+    Name = "Plantio Automático",
+    CurrentValue = false,
+    Callback = function(Value)
+        AutoPlantEnabled = Value
+        if Value then
+            task.spawn(function()
+                while AutoPlantEnabled do
+                    AutoPlantLoop()
+                    wait(2) -- Espera 2 segundos entre os plantios
+                end
+            end)
+        end
+    end,
+})
+
+-- Toggle para Colheita Automática
+MainTab:CreateToggle({
+    Name = "Colheita Automática",
+    CurrentValue = false,
+    Callback = function(Value)
+        AutoHarvestEnabled = Value
+        if Value then
+            task.spawn(AutoHarvestLoop)
+        end
+    end,
+})
+
+-- Toggle para Compra Automática
+MainTab:CreateToggle({
+    Name = "Compra Automática",
+    CurrentValue = false,
+    Callback = function(Value)
+        AutoBuyEnabled = Value
+        if Value then
+            task.spawn(AutoBuyLoop)
+        end
+    end,
+})
+
+-- Botão para comprar todas as sementes selecionadas
+MainTab:CreateButton({
+    Name = "Comprar Todas as Sementes",
+    Callback = BuyAllSelectedSeeds
+})
+
+-- Botão para colher plantas
+MainTab:CreateButton({
+    Name = "Colher Plantas",
+    Callback = HarvestPlants
+})
+
 -- Criar Aba do Player
 local PlayerTab = Window:CreateTab("Player", 4483362458)
 local PlayerSection = PlayerTab:CreateSection("Modificações do Player")
@@ -149,7 +402,7 @@ PlayerTab:CreateSlider({
     Name = "Velocidade do Personagem",
     Range = {16, 100},
     Increment = 1,
-    Suffix = "está",
+    Suffix = "unidades",
     CurrentValue = 16,
     Callback = function(Value)
         local character = game.Players.LocalPlayer.Character
@@ -160,64 +413,4 @@ PlayerTab:CreateSlider({
             end
         end
     end,
-})
-
--- Função para configurar a velocidade do jogador
-local function SetPlayerSpeed()
-    Rayfield:Prompt({
-        Title = 'Definir Velocidade',
-        SubTitle = 'Digite o valor da velocidade:',
-        Actions = {
-            Accept = {
-                Name = 'Confirmar',
-                Callback = function(input)
-                    local speed = tonumber(input)
-                    if speed and speed > 0 then
-                        local character = game.Players.LocalPlayer.Character
-                        if character then
-                            local humanoid = character:FindFirstChildOfClass("Humanoid")
-                            if humanoid then
-                                humanoid.WalkSpeed = speed
-                                Rayfield:Notify({
-                                    Title = "Sucesso",
-                                    Content = "Velocidade definida para: " .. speed,
-                                    Duration = 3
-                                })
-                            else
-                                Rayfield:Notify({
-                                    Title = "Erro",
-                                    Content = "Humanoid não encontrado!",
-                                    Duration = 3
-                                })
-                            end
-                        else
-                            Rayfield:Notify({
-                                Title = "Erro",
-                                Content = "Personagem não encontrado!",
-                                Duration = 3
-                            })
-                        end
-                    else
-                        Rayfield:Notify({
-                            Title = "Erro",
-                            Content = "Digite um número válido!",
-                            Duration = 3
-                        })
-                    end
-                end
-            },
-            Decline = {
-                Name = 'Cancelar',
-                Callback = function()
-                    -- Não faz nada
-                end
-            }
-        }
-    })
-end
-
--- Botão para definir velocidade do jogador (TERCEIRO)
-PlayerTab:CreateButton({
-    Name = "Definir Velocidade",
-    Callback = SetPlayerSpeed
 })
