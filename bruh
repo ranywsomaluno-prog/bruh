@@ -17,21 +17,28 @@ local Window = Rayfield:CreateWindow({
 local MainTab = Window:CreateTab("Controle", 4483362458)
 local Section = MainTab:CreateSection("Executar Ação")
 
--- Localizar o RemoteEvent
+-- Localizar os RemoteEvents
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmitAllPlant
+local BuySeedStock = ReplicatedStorage.GameEvents.BuySeedStock
 
 -- Variáveis de controle
 local AutoExecutar = false
 local Velocidade = 1
 
--- Função que dispara o RemoteEvent
+-- Função que dispara o RemoteEvent Beanstalk
 local function ExecutarAcao()
     BeanstalkRESubmitAllPlant:FireServer()
     print("RemoteEvent BeanstalkRESubmitAllPlant disparado!")
 end
 
--- Toggle para loop
+-- Função que dispara o RemoteEvent BuySeedStock
+local function ComprarSemente()
+    BuySeedStock:FireServer()
+    print("RemoteEvent BuySeedStock disparado!")
+end
+
+-- Toggle para loop do Beanstalk
 MainTab:CreateToggle({
     Name = "Executar Repetidamente",
     CurrentValue = false,
@@ -63,11 +70,19 @@ MainTab:CreateSlider({
     end,
 })
 
--- Botão para execução única
+-- Botão para execução única do Beanstalk
 MainTab:CreateButton({
-    Name = "Executar Agora (Uma vez)",
+    Name = "Executar Beanstalk (Uma vez)",
     Callback = function()
         ExecutarAcao()
+    end
+})
+
+-- Botão para comprar semente
+MainTab:CreateButton({
+    Name = "Comprar Semente (BuySeedStock)",
+    Callback = function()
+        ComprarSemente()
     end
 })
 
@@ -79,7 +94,7 @@ local PlayerSection = PlayerTab:CreateSection("Modificações do Player")
 local InfiniteJumpEnabled = false
 local JumpConnection = nil
 
--- Função para configurar a velocidade do jogador (versão simplificada)
+-- Função para configurar a velocidade do jogador
 local function SetPlayerSpeed()
     Rayfield:Prompt({
         Title = 'Definir Velocidade',
@@ -163,7 +178,7 @@ PlayerTab:CreateToggle({
     end,
 })
 
--- Adicionar também um slider para velocidade mais fácil
+-- Slider para velocidade do personagem
 PlayerTab:CreateSlider({
     Name = "Velocidade do Personagem",
     Range = {16, 100},
