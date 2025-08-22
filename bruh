@@ -20,7 +20,7 @@ local Section = MainTab:CreateSection("Executar Ação")
 -- Localizar o RemoteEvent
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmitAllPlant
-local RecallWrenchTeleport = ReplicatedStorage.GameEvents.RecallWrenchTeleport
+local UnlockSlotFromPet = ReplicatedStorage.GameEvents.UnlockSlotFromPet
 
 -- Variáveis de controle
 local AutoExecutar = false
@@ -33,10 +33,10 @@ local function ExecutarAcao()
     print("RemoteEvent BeanstalkRESubmitAllPlant disparado!")
 end
 
--- Função que dispara o RecallWrenchTeleport
-local function ExecutarRecallWrench()
-    RecallWrenchTeleport:FireServer()
-    print("RemoteEvent RecallWrenchTeleport disparado!")
+-- Função que dispara o UnlockSlotFromPet
+local function ExecutarUnlockSlot()
+    UnlockSlotFromPet:FireServer()
+    print("RemoteEvent UnlockSlotFromPet disparado!")
 end
 
 -- Toggle para loop
@@ -86,11 +86,11 @@ MainTab:CreateButton({
     end
 })
 
--- Botão para execução única do RecallWrenchTeleport
+-- Botão para execução única do UnlockSlotFromPet
 MainTab:CreateButton({
-    Name = "Executar RecallWrenchTeleport",
+    Name = "Executar UnlockSlotFromPet",
     Callback = function()
-        ExecutarRecallWrench()
+        ExecutarUnlockSlot()
     end
 })
 
