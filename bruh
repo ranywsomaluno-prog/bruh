@@ -1,416 +1,384 @@
--- Carregar Rayfield
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
-
--- Criar Janela
-local Window = Rayfield:CreateWindow({
-    Name = "Interface de Teste",
-    LoadingTitle = "Rayfield UI",
-    LoadingSubtitle = "Exemplo Toggle + Slider",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "RayfieldExample",
-        FileName = "ConfigUI"
-    }
-})
-
--- Criar Aba Principal
-local MainTab = Window:CreateTab("Controle", 4483362458)
-local Section = MainTab:CreateSection("Executar Ação")
-
--- Localizar o RemoteEvent
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local BeanstalkRESubmitAllPlant = ReplicatedStorage.GameEvents.BeanstalkRESubmitAllPlant
-local UnlockSlotFromPet = ReplicatedStorage.GameEvents.UnlockSlotFromPet
-local Plant_RE = ReplicatedStorage.GameEvents.Plant_RE
-local Sell_Inventory = ReplicatedStorage.GameEvents.Sell_Inventory
-local BuySeedStock = ReplicatedStorage.GameEvents.BuySeedStock
-
--- Variáveis de controle
-local AutoExecutar = false
-local Velocidade = 1
-local AutoTask = nil
-
--- Variáveis para as novas funcionalidades
-local AutoPlantEnabled = false
-local AutoHarvestEnabled = false
-local AutoBuyEnabled = false
-local SelectedSeed = ""
-
--- Função que dispara o RemoteEvent
-local function ExecutarAcao()
-    BeanstalkRESubmitAllPlant:FireServer()
-    print("RemoteEvent BeanstalkRESubmitAllPlant disparado!")
-end
-
--- Função que dispara o UnlockSlotFromPet
-local function ExecutarUnlockSlot()
-    UnlockSlotFromPet:FireServer()
-    print("RemoteEvent UnlockSlotFromPet disparado!")
-end
-
--- Funções extraídas do script analisado
-local function GetFarm()
-    local Farms = workspace.Farm:GetChildren()
-    local LocalPlayer = game.Players.LocalPlayer
-    
-    for _, Farm in next, Farms do
-        local Important = Farm.Important
-        local Data = Important.Data
-        local Owner = Data.Owner
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Estilo Rayfield</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
         
-        if Owner.Value == LocalPlayer.Name then
-            return Farm
-        end
-    end
-    return nil
-end
-
-local function GetSeedStock()
-    local SeedStock = {}
-    local SeedShop = game.Players.LocalPlayer.PlayerGui.Seed_Shop
-    local Items = SeedShop:FindFirstChild("Blueberry", true).Parent
-    
-    for _, Item in next, Items:GetChildren() do
-        local MainFrame = Item:FindFirstChild("Main_Frame")
-        if not MainFrame then continue end
+        body {
+            background-color: #0e0e13;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
         
-        local StockText = MainFrame.Stock_Text.Text
-        local StockCount = tonumber(StockText:match("%d+"))
+        .container {
+            width: 500px;
+            background-color: #1a1a24;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
         
-        SeedStock[Item.Name] = StockCount
-    end
-    
-    return SeedStock
-end
-
-local function BuySeed(Seed)
-    BuySeedStock:FireServer(Seed)
-end
-
-local function BuyAllSelectedSeeds()
-    local Stock = GetSeedStock()[SelectedSeed]
-    if not Stock or Stock <= 0 then return end
-    
-    for i = 1, Stock do
-        BuySeed(SelectedSeed)
-        wait(0.1)
-    end
-end
-
-local function Plant(Position, Seed)
-    Plant_RE:FireServer(Position, Seed)
-    wait(0.3)
-end
-
-local function GetRandomFarmPoint()
-    local MyFarm = GetFarm()
-    if not MyFarm then return Vector3.new(0, 0, 0) end
-    
-    local PlantLocations = MyFarm.Important.Plant_Locations
-    local FarmLands = PlantLocations:GetChildren()
-    local FarmLand = FarmLands[math.random(1, #FarmLands)]
-    
-    local function GetArea(Base)
-        local Center = Base:GetPivot()
-        local Size = Base.Size
+        .header {
+            background-color: #121218;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #2a2a3c;
+        }
         
-        local X1 = math.ceil(Center.X - (Size.X/2))
-        local Z1 = math.ceil(Center.Z - (Size.Z/2))
-        local X2 = math.floor(Center.X + (Size.X/2))
-        local Z2 = math.floor(Center.Z + (Size.Z/2))
+        .title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #7a5af5;
+            margin-bottom: 5px;
+        }
         
-        return X1, Z1, X2, Z2
-    end
-    
-    local X1, Z1, X2, Z2 = GetArea(FarmLand)
-    local X = math.random(X1, X2)
-    local Z = math.random(Z1, Z2)
-    
-    return Vector3.new(X, 4, Z)
-end
-
-local function AutoPlantLoop()
-    if not SelectedSeed or SelectedSeed == "" then
-        print("Selecione uma semente primeiro!")
-        return
-    end
-    
-    local Stock = GetSeedStock()[SelectedSeed]
-    if not Stock or Stock <= 0 then
-        print("Sem estoque da semente selecionada!")
-        return
-    end
-    
-    for i = 1, Stock do
-        if not AutoPlantEnabled then break end
+        .subtitle {
+            font-size: 14px;
+            color: #a0a0b8;
+        }
         
-        local Point = GetRandomFarmPoint()
-        Plant(Point, SelectedSeed)
-    end
-end
-
-local function HarvestPlant(Plant)
-    local Prompt = Plant:FindFirstChild("ProximityPrompt", true)
-    if not Prompt then return end
-    
-    fireproximityprompt(Prompt)
-end
-
-local function GetHarvestablePlants()
-    local Plants = {}
-    local MyFarm = GetFarm()
-    if not MyFarm then return Plants end
-    
-    local PlantsPhysical = MyFarm.Important.Plants_Physical
-    local Character = game.Players.LocalPlayer.Character
-    local PlayerPosition = Character:GetPivot().Position
-    
-    local function CollectHarvestable(Parent, PlantsList)
-        for _, Plant in next, Parent:GetChildren() do
-            local Fruits = Plant:FindFirstChild("Fruits")
-            if Fruits then
-                CollectHarvestable(Fruits, PlantsList)
-            end
+        .tabs {
+            display: flex;
+            background-color: #121218;
+            border-bottom: 1px solid #2a2a3c;
+        }
+        
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            color: #a0a0b8;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: #7a5af5;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #7a5af5;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .tab:hover:not(.active) {
+            background-color: #1c1c28;
+            color: #d0d0e0;
+        }
+        
+        .content {
+            padding: 25px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #7a5af5;
+            font-weight: 600;
+        }
+        
+        .button {
+            background-color: #7a5af5;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .button:hover {
+            background-color: #8b6dff;
+            transform: translateY(-2px);
+        }
+        
+        .input-button {
+            display: flex;
+            align-items: center;
+            background-color: #252536;
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .input-button input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            padding: 12px 15px;
+            color: white;
+            outline: none;
+        }
+        
+        .input-button .button {
+            width: auto;
+            margin: 4px;
+            padding: 8px 15px;
+        }
+        
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        
+        .slider-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .slider-value {
+            color: #7a5af5;
+            font-weight: 600;
+        }
+        
+        .slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #252536;
+            outline: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #7a5af5;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .slider::-webkit-slider-thumb:hover {
+            background: #8b6dff;
+            transform: scale(1.1);
+        }
+        
+        .toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #252536;
+            border-radius: 6px;
+        }
+        
+        .toggle-label {
+            font-weight: 600;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #3a3a4f;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #7a5af5;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="title">Nova Interface</div>
+            <div class="subtitle">Estilo Rayfield Personalizado</div>
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="tab1">Principal</div>
+            <div class="tab" data-tab="tab2">Configurações</div>
+            <div class="tab" data-tab="tab3">Extras</div>
+        </div>
+        
+        <div class="content">
+            <div class="tab-content active" id="tab1">
+                <div class="section">
+                    <div class="section-title">Botões</div>
+                    <div class="button" id="exemploBtn">Botão de Exemplo</div>
+                    
+                    <div class="input-button">
+                        <input type="number" id="numeroInput" placeholder="Digite um número">
+                        <div class="button" id="numeroBtn">Enviar</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <div class="section-title">Slider</div>
+                    <div class="slider-container">
+                        <div class="slider-info">
+                            <span>Intensidade:</span>
+                            <span class="slider-value" id="sliderValue">50%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="50" class="slider" id="mySlider">
+                    </div>
+                </div>
+            </div>
             
-            local PlantPosition = Plant:GetPivot().Position
-            local Distance = (PlayerPosition - PlantPosition).Magnitude
-            if Distance > 15 then continue end
+            <div class="tab-content" id="tab2">
+                <div class="section">
+                    <div class="section-title">Configurações</div>
+                    
+                    <div class="toggle">
+                        <span class="toggle-label">Opção 1</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle1">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle">
+                        <span class="toggle-label">Opção 2</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle2" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="toggle">
+                        <span class="toggle-label">Opção 3</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="toggle3">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
             
-            local Prompt = Plant:FindFirstChild("ProximityPrompt", true)
-            if Prompt and Prompt.Enabled then
-                table.insert(PlantsList, Plant)
-            end
-        end
-        return PlantsList
-    end
-    
-    return CollectHarvestable(PlantsPhysical, Plants)
-end
+            <div class="tab-content" id="tab3">
+                <div class="section">
+                    <div class="section-title">Informações Extras</div>
+                    <p style="color: #a0a0b8; margin-bottom: 15px; line-height: 1.5;">
+                        Esta é uma interface personalizada inspirada no Rayfield, mas com design único e elementos modernos.
+                    </p>
+                    
+                    <div class="button">Botão Extra</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-local function HarvestPlants()
-    local Plants = GetHarvestablePlants()
-    for _, Plant in next, Plants do
-        HarvestPlant(Plant)
-    end
-end
-
-local function AutoHarvestLoop()
-    while AutoHarvestEnabled do
-        HarvestPlants()
-        wait(1)
-    end
-end
-
-local function AutoBuyLoop()
-    while AutoBuyEnabled do
-        BuyAllSelectedSeeds()
-        wait(5) -- Verifica a cada 5 segundos
-    end
-end
-
--- Toggle para loop
-MainTab:CreateToggle({
-    Name = "Executar Repetidamente",
-    CurrentValue = false,
-    Callback = function(Value)
-        AutoExecutar = Value
+    <script>
+        // Alternar entre abas
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tab.dataset.tab).classList.add('active');
+            });
+        });
         
-        -- Parar task anterior se existir
-        if AutoTask then
-            task.cancel(AutoTask)
-            AutoTask = nil
-        end
+        // Atualizar valor do slider
+        const slider = document.getElementById('mySlider');
+        const sliderValue = document.getElementById('sliderValue');
         
-        print("AutoExecutar:", Value)
-
-        if AutoExecutar then
-            AutoTask = task.spawn(function()
-                while AutoExecutar do
-                    ExecutarAcao()
-                    task.wait(Velocidade)
-                end
-            end)
-        end
-    end,
-})
-
--- Slider para velocidade
-MainTab:CreateSlider({
-    Name = "Velocidade de Execução",
-    Range = {0.1, 5},
-    Increment = 0.1,
-    Suffix = "s",
-    CurrentValue = 1,
-    Callback = function(Value)
-        Velocidade = Value
-        print("Velocidade ajustada para:", Value, "segundos")
-    end,
-})
-
--- Botão para execução única do Beanstalk
-MainTab:CreateButton({
-    Name = "Executar Beanstalk (Uma vez)",
-    Callback = function()
-        ExecutarAcao()
-    end
-})
-
--- Botão para execução única do UnlockSlotFromPet
-MainTab:CreateButton({
-    Name = "Executar UnlockSlotFromPet",
-    Callback = function()
-        ExecutarUnlockSlot()
-    end
-})
-
--- Nova seção para as funcionalidades extraídas
-local FarmSection = MainTab:CreateSection("Farm Automático")
-
--- Seleção de semente
-local seedOptions = {}
-local function UpdateSeedOptions()
-    seedOptions = {}
-    local stock = GetSeedStock()
-    for seedName, _ in pairs(stock) do
-        table.insert(seedOptions, seedName)
-    end
-end
-
-UpdateSeedOptions()
-
-MainTab:CreateDropdown({
-    Name = "Selecionar Semente",
-    Options = seedOptions,
-    CurrentOption = "",
-    Callback = function(Option)
-        SelectedSeed = Option
-        print("Semente selecionada:", SelectedSeed)
-    end,
-})
-
--- Botão para atualizar lista de sementes
-MainTab:CreateButton({
-    Name = "Atualizar Lista de Sementes",
-    Callback = UpdateSeedOptions
-})
-
--- Toggle para Plantio Automático
-MainTab:CreateToggle({
-    Name = "Plantio Automático",
-    CurrentValue = false,
-    Callback = function(Value)
-        AutoPlantEnabled = Value
-        if Value then
-            task.spawn(function()
-                while AutoPlantEnabled do
-                    AutoPlantLoop()
-                    wait(2) -- Espera 2 segundos entre os plantios
-                end
-            end)
-        end
-    end,
-})
-
--- Toggle para Colheita Automática
-MainTab:CreateToggle({
-    Name = "Colheita Automática",
-    CurrentValue = false,
-    Callback = function(Value)
-        AutoHarvestEnabled = Value
-        if Value then
-            task.spawn(AutoHarvestLoop)
-        end
-    end,
-})
-
--- Toggle para Compra Automática
-MainTab:CreateToggle({
-    Name = "Compra Automática",
-    CurrentValue = false,
-    Callback = function(Value)
-        AutoBuyEnabled = Value
-        if Value then
-            task.spawn(AutoBuyLoop)
-        end
-    end,
-})
-
--- Botão para comprar todas as sementes selecionadas
-MainTab:CreateButton({
-    Name = "Comprar Todas as Sementes",
-    Callback = BuyAllSelectedSeeds
-})
-
--- Botão para colher plantas
-MainTab:CreateButton({
-    Name = "Colher Plantas",
-    Callback = HarvestPlants
-})
-
--- Criar Aba do Player
-local PlayerTab = Window:CreateTab("Player", 4483362458)
-local PlayerSection = PlayerTab:CreateSection("Modificações do Player")
-
--- Variável para controle do Infinite Jump
-local InfiniteJumpEnabled = false
-local JumpConnection = nil
-
--- Função para Infinite Jump
-local function ToggleInfiniteJump()
-    if JumpConnection then
-        JumpConnection:Disconnect()
-        JumpConnection = nil
-    end
-    
-    if InfiniteJumpEnabled then
-        JumpConnection = game:GetService("UserInputService").JumpRequest:Connect(function()
-            local character = game.Players.LocalPlayer.Character
-            if character then
-                local humanoid = character:FindFirstChildOfClass("Humanoid")
-                if humanoid and humanoid:GetState() ~= Enum.HumanoidStateType.Dead then
-                    humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-                end
-            end
-        end)
+        slider.addEventListener('input', () => {
+            sliderValue.textContent = `${slider.value}%`;
+        });
         
-        Rayfield:Notify({
-            Title = "Infinite Jump Ativado",
-            Content = "Pressione Espaço para pular infinitamente",
-            Duration = 3
-        })
-    else
-        Rayfield:Notify({
-            Title = "Infinite Jump Desativado",
-            Content = "Pulo infinito desligado",
-            Duration = 3
-        })
-    end
-end
-
--- Toggle para Infinite Jump (PRIMEIRO)
-PlayerTab:CreateToggle({
-    Name = "Infinite Jump",
-    CurrentValue = false,
-    Callback = function(Value)
-        InfiniteJumpEnabled = Value
-        ToggleInfiniteJump()
-    end,
-})
-
--- Slider para velocidade (SEGUNDO)
-PlayerTab:CreateSlider({
-    Name = "Velocidade do Personagem",
-    Range = {16, 100},
-    Increment = 1,
-    Suffix = "unidades",
-    CurrentValue = 16,
-    Callback = function(Value)
-        local character = game.Players.LocalPlayer.Character
-        if character then
-            local humanoid = character:FindFirstChildOfClass("Humanoid")
-            if humanoid then
-                humanoid.WalkSpeed = Value
-            end
-        end
-    end,
-})
+        // Botão de exemplo
+        document.getElementById('exemploBtn').addEventListener('click', () => {
+            alert('Botão de exemplo clicado!');
+        });
+        
+        // Botão com número
+        document.getElementById('numeroBtn').addEventListener('click', () => {
+            const valor = document.getElementById('numeroInput').value;
+            if (valor) {
+                alert(`Número digitado: ${valor}`);
+            } else {
+                alert('Por favor, digite um número primeiro.');
+            }
+        });
+        
+        // Toggles
+        document.querySelectorAll('.toggle-switch input').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                console.log(`Toggle ${this.id} está ${this.checked ? 'ativado' : 'desativado'}`);
+            });
+        });
+    </script>
+</body>
+</html>
