@@ -3,9 +3,8 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 -- Personalization settings
 local PersonalizationUI = {
     NameUI = "goon hub",
-    CreatorName = "rany",
+    CreatorName = "rany", 
     LoadingMessage = "rapaz ele tá sem zap",
-    MainColor = Color3.fromRGB(120, 90, 245),
     ShowNotifications = true
 }
 
@@ -21,7 +20,7 @@ local Window = Rayfield:CreateWindow({
     },
     Discord = {
         Enabled = false,
-        Invite = "discord.gg/goonhub",
+        Invite = "discord.gg/goonhub", 
         RememberJoins = true
     },
     KeySystem = false,
@@ -33,7 +32,6 @@ Rayfield:Notify(PersonalizationUI.LoadingMessage, 5)
 -- Create tabs
 local MainTab = Window:CreateTab("Main", 4483362458)
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
-local ExtraTab = Window:CreateTab("Extra", 4483362458)
 
 -- Variables for auto farm
 local AutoFarmEnabled = false
@@ -50,6 +48,7 @@ local function ExecuteRemote()
         if PersonalizationUI.ShowNotifications then
             Rayfield:Notify("Remote executed successfully!", 3)
         end
+        print("Beanstalk remote executed successfully")
     else
         warn("Error executing remote: " .. tostring(errorMessage))
         if PersonalizationUI.ShowNotifications then
@@ -60,8 +59,9 @@ end
 
 -- Auto farm function
 local function StartAutoFarm()
-    while AutoFarmEnabled and task.wait(FarmDelay) do
+    while AutoFarmEnabled do
         ExecuteRemote()
+        task.wait(FarmDelay)
     end
 end
 
@@ -78,11 +78,14 @@ local AutoFarmToggle = MainTab:CreateToggle({
             if PersonalizationUI.ShowNotifications then
                 Rayfield:Notify("Auto Farm started!", 3)
             end
-            task.spawn(StartAutoFarm)
+            print("Auto Farm started with delay: " .. FarmDelay .. "s")
+            -- Start auto farm in a separate thread
+            coroutine.wrap(StartAutoFarm)()
         else
             if PersonalizationUI.ShowNotifications then
                 Rayfield:Notify("Auto Farm stopped!", 3)
             end
+            print("Auto Farm stopped")
         end
     end,
 })
@@ -91,7 +94,7 @@ local AutoFarmToggle = MainTab:CreateToggle({
 local DelaySlider = MainTab:CreateSlider({
     Name = "Farm Delay (seconds)",
     Range = {1, 5},
-    Increment = 0.5,
+    Increment = 1,
     Suffix = "s",
     CurrentValue = 1,
     Callback = function(Value)
@@ -99,34 +102,15 @@ local DelaySlider = MainTab:CreateSlider({
         if PersonalizationUI.ShowNotifications then
             Rayfield:Notify("Delay set to: " .. Value .. "s", 2)
         end
+        print("Farm delay set to: " .. Value .. "s")
     end,
 })
 
 -- Execute Once Button
 local ExecuteOnceButton = MainTab:CreateButton({
     Name = "Execute Once",
-    Callback = ExecuteRemote,
-})
-
--- Test Section
-local TestSection = MainTab:CreateSection("Test Elements")
-
-local TestButton = MainTab:CreateButton({
-    Name = "Test Button",
     Callback = function()
-        Rayfield:Notify("Test button works!", 3)
-    end,
-})
-
-local TestToggle = MainTab:CreateToggle({
-    Name = "Test Toggle",
-    CurrentValue = false,
-    Callback = function(Value)
-        if Value then
-            Rayfield:Notify("Test toggle enabled!", 2)
-        else
-            Rayfield:Notify("Test toggle disabled!", 2)
-        end
+        ExecuteRemote()
     end,
 })
 
@@ -139,29 +123,6 @@ local NotificationsToggle = SettingsTab:CreateToggle({
     Callback = function(Value)
         PersonalizationUI.ShowNotifications = Value
         Rayfield:Notify("Notifications " .. (Value and "enabled" or "disabled"), 2)
-    end,
-})
-
-local ThemeDropdown = SettingsTab:CreateDropdown({
-    Name = "UI Theme",
-    Options = {"Default", "Dark", "Light", "Aqua"},
-    CurrentOption = "Default",
-    Callback = function(Option)
-        Rayfield:Notify("Theme changed to: " .. Option, 2)
-    end,
-})
-
--- Extra Tab
-local InfoSection = ExtraTab:CreateSection("Information")
-
-local CreatorLabel = ExtraTab:CreateLabel("Created by: " .. PersonalizationUI.CreatorName)
-local VersionLabel = ExtraTab:CreateLabel("Version: 1.0.0")
-
-local DiscordButton = ExtraTab:CreateButton({
-    Name = "Copy Discord",
-    Callback = function()
-        setclipboard("discord.gg/goonhub")
-        Rayfield:Notify("Discord copied to clipboard!", 3)
     end,
 })
 
