@@ -1,384 +1,171 @@
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UI Estilo Rayfield</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #0e0e13;
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            width: 500px;
-            background-color: #1a1a24;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-        }
-        
-        .header {
-            background-color: #121218;
-            padding: 20px;
-            text-align: center;
-            border-bottom: 1px solid #2a2a3c;
-        }
-        
-        .title {
-            font-size: 24px;
-            font-weight: 700;
-            color: #7a5af5;
-            margin-bottom: 5px;
-        }
-        
-        .subtitle {
-            font-size: 14px;
-            color: #a0a0b8;
-        }
-        
-        .tabs {
-            display: flex;
-            background-color: #121218;
-            border-bottom: 1px solid #2a2a3c;
-        }
-        
-        .tab {
-            padding: 15px 25px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            font-weight: 600;
-            color: #a0a0b8;
-            position: relative;
-        }
-        
-        .tab.active {
-            color: #7a5af5;
-        }
-        
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background-color: #7a5af5;
-            border-radius: 3px 3px 0 0;
-        }
-        
-        .tab:hover:not(.active) {
-            background-color: #1c1c28;
-            color: #d0d0e0;
-        }
-        
-        .content {
-            padding: 25px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .section {
-            margin-bottom: 25px;
-        }
-        
-        .section-title {
-            font-size: 18px;
-            margin-bottom: 15px;
-            color: #7a5af5;
-            font-weight: 600;
-        }
-        
-        .button {
-            background-color: #7a5af5;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            width: 100%;
-            margin-bottom: 10px;
-            text-align: center;
-        }
-        
-        .button:hover {
-            background-color: #8b6dff;
-            transform: translateY(-2px);
-        }
-        
-        .input-button {
-            display: flex;
-            align-items: center;
-            background-color: #252536;
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 15px;
-        }
-        
-        .input-button input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            padding: 12px 15px;
-            color: white;
-            outline: none;
-        }
-        
-        .input-button .button {
-            width: auto;
-            margin: 4px;
-            padding: 8px 15px;
-        }
-        
-        .slider-container {
-            margin-bottom: 20px;
-        }
-        
-        .slider-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-        }
-        
-        .slider-value {
-            color: #7a5af5;
-            font-weight: 600;
-        }
-        
-        .slider {
-            -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
-            border-radius: 3px;
-            background: #252536;
-            outline: none;
-        }
-        
-        .slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 18px;
-            height: 18px;
-            border-radius: 50%;
-            background: #7a5af5;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .slider::-webkit-slider-thumb:hover {
-            background: #8b6dff;
-            transform: scale(1.1);
-        }
-        
-        .toggle {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            padding: 10px;
-            background-color: #252536;
-            border-radius: 6px;
-        }
-        
-        .toggle-label {
-            font-weight: 600;
-        }
-        
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-        
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #3a3a4f;
-            transition: .4s;
-            border-radius: 24px;
-        }
-        
-        .toggle-slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        
-        input:checked + .toggle-slider {
-            background-color: #7a5af5;
-        }
-        
-        input:checked + .toggle-slider:before {
-            transform: translateX(26px);
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="title">Nova Interface</div>
-            <div class="subtitle">Estilo Rayfield Personalizado</div>
-        </div>
-        
-        <div class="tabs">
-            <div class="tab active" data-tab="tab1">Principal</div>
-            <div class="tab" data-tab="tab2">Configurações</div>
-            <div class="tab" data-tab="tab3">Extras</div>
-        </div>
-        
-        <div class="content">
-            <div class="tab-content active" id="tab1">
-                <div class="section">
-                    <div class="section-title">Botões</div>
-                    <div class="button" id="exemploBtn">Botão de Exemplo</div>
-                    
-                    <div class="input-button">
-                        <input type="number" id="numeroInput" placeholder="Digite um número">
-                        <div class="button" id="numeroBtn">Enviar</div>
-                    </div>
-                </div>
-                
-                <div class="section">
-                    <div class="section-title">Slider</div>
-                    <div class="slider-container">
-                        <div class="slider-info">
-                            <span>Intensidade:</span>
-                            <span class="slider-value" id="sliderValue">50%</span>
-                        </div>
-                        <input type="range" min="0" max="100" value="50" class="slider" id="mySlider">
-                    </div>
-                </div>
-            </div>
-            
-            <div class="tab-content" id="tab2">
-                <div class="section">
-                    <div class="section-title">Configurações</div>
-                    
-                    <div class="toggle">
-                        <span class="toggle-label">Opção 1</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="toggle1">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle">
-                        <span class="toggle-label">Opção 2</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="toggle2" checked>
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                    
-                    <div class="toggle">
-                        <span class="toggle-label">Opção 3</span>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="toggle3">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="tab-content" id="tab3">
-                <div class="section">
-                    <div class="section-title">Informações Extras</div>
-                    <p style="color: #a0a0b8; margin-bottom: 15px; line-height: 1.5;">
-                        Esta é uma interface personalizada inspirada no Rayfield, mas com design único e elementos modernos.
-                    </p>
-                    
-                    <div class="button">Botão Extra</div>
-                </div>
-            </div>
-        </div>
-    </div>
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-    <script>
-        // Alternar entre abas
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                
-                tab.classList.add('active');
-                document.getElementById(tab.dataset.tab).classList.add('active');
-            });
-        });
-        
-        // Atualizar valor do slider
-        const slider = document.getElementById('mySlider');
-        const sliderValue = document.getElementById('sliderValue');
-        
-        slider.addEventListener('input', () => {
-            sliderValue.textContent = `${slider.value}%`;
-        });
-        
-        // Botão de exemplo
-        document.getElementById('exemploBtn').addEventListener('click', () => {
-            alert('Botão de exemplo clicado!');
-        });
-        
-        // Botão com número
-        document.getElementById('numeroBtn').addEventListener('click', () => {
-            const valor = document.getElementById('numeroInput').value;
-            if (valor) {
-                alert(`Número digitado: ${valor}`);
-            } else {
-                alert('Por favor, digite um número primeiro.');
-            }
-        });
-        
-        // Toggles
-        document.querySelectorAll('.toggle-switch input').forEach(toggle => {
-            toggle.addEventListener('change', function() {
-                console.log(`Toggle ${this.id} está ${this.checked ? 'ativado' : 'desativado'}`);
-            });
-        });
-    </script>
-</body>
-</html>
+-- Personalization settings
+local PersonalizationUI = {
+    NameUI = "goon hub",
+    CreatorName = "rany",
+    LoadingMessage = "rapaz ele tá sem zap",
+    MainColor = Color3.fromRGB(120, 90, 245),
+    ShowNotifications = true
+}
+
+-- Create Window
+local Window = Rayfield:CreateWindow({
+    Name = PersonalizationUI.NameUI,
+    LoadingTitle = PersonalizationUI.NameUI,
+    LoadingSubtitle = "by " .. PersonalizationUI.CreatorName,
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "GoonHubConfigs",
+        FileName = "GoonHubSettings"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "discord.gg/goonhub",
+        RememberJoins = true
+    },
+    KeySystem = false,
+})
+
+-- Show loading notification
+Rayfield:Notify(PersonalizationUI.LoadingMessage, 5)
+
+-- Create tabs
+local MainTab = Window:CreateTab("Main", 4483362458)
+local SettingsTab = Window:CreateTab("Settings", 4483362458)
+local ExtraTab = Window:CreateTab("Extra", 4483362458)
+
+-- Variables for auto farm
+local AutoFarmEnabled = false
+local FarmDelay = 1
+local BeanstalkRemote = game:GetService("ReplicatedStorage"):WaitForChild("BeanstalkRESubmitAllPlant")
+
+-- Function to execute remote
+local function ExecuteRemote()
+    local success, errorMessage = pcall(function()
+        BeanstalkRemote:FireServer()
+    end)
+    
+    if success then
+        if PersonalizationUI.ShowNotifications then
+            Rayfield:Notify("Remote executed successfully!", 3)
+        end
+    else
+        warn("Error executing remote: " .. tostring(errorMessage))
+        if PersonalizationUI.ShowNotifications then
+            Rayfield:Notify("Error executing remote!", 3)
+        end
+    end
+end
+
+-- Auto farm function
+local function StartAutoFarm()
+    while AutoFarmEnabled and task.wait(FarmDelay) do
+        ExecuteRemote()
+    end
+end
+
+-- Create Beanstalk section
+local BeanstalkSection = MainTab:CreateSection("Beanstalk Farm")
+
+-- Auto Farm Toggle
+local AutoFarmToggle = MainTab:CreateToggle({
+    Name = "Auto Farm Beanstalk",
+    CurrentValue = false,
+    Callback = function(Value)
+        AutoFarmEnabled = Value
+        if Value then
+            if PersonalizationUI.ShowNotifications then
+                Rayfield:Notify("Auto Farm started!", 3)
+            end
+            task.spawn(StartAutoFarm)
+        else
+            if PersonalizationUI.ShowNotifications then
+                Rayfield:Notify("Auto Farm stopped!", 3)
+            end
+        end
+    end,
+})
+
+-- Delay Slider
+local DelaySlider = MainTab:CreateSlider({
+    Name = "Farm Delay (seconds)",
+    Range = {1, 5},
+    Increment = 0.5,
+    Suffix = "s",
+    CurrentValue = 1,
+    Callback = function(Value)
+        FarmDelay = Value
+        if PersonalizationUI.ShowNotifications then
+            Rayfield:Notify("Delay set to: " .. Value .. "s", 2)
+        end
+    end,
+})
+
+-- Execute Once Button
+local ExecuteOnceButton = MainTab:CreateButton({
+    Name = "Execute Once",
+    Callback = ExecuteRemote,
+})
+
+-- Test Section
+local TestSection = MainTab:CreateSection("Test Elements")
+
+local TestButton = MainTab:CreateButton({
+    Name = "Test Button",
+    Callback = function()
+        Rayfield:Notify("Test button works!", 3)
+    end,
+})
+
+local TestToggle = MainTab:CreateToggle({
+    Name = "Test Toggle",
+    CurrentValue = false,
+    Callback = function(Value)
+        if Value then
+            Rayfield:Notify("Test toggle enabled!", 2)
+        else
+            Rayfield:Notify("Test toggle disabled!", 2)
+        end
+    end,
+})
+
+-- Settings Tab
+local UISettingsSection = SettingsTab:CreateSection("UI Settings")
+
+local NotificationsToggle = SettingsTab:CreateToggle({
+    Name = "Show Notifications",
+    CurrentValue = PersonalizationUI.ShowNotifications,
+    Callback = function(Value)
+        PersonalizationUI.ShowNotifications = Value
+        Rayfield:Notify("Notifications " .. (Value and "enabled" or "disabled"), 2)
+    end,
+})
+
+local ThemeDropdown = SettingsTab:CreateDropdown({
+    Name = "UI Theme",
+    Options = {"Default", "Dark", "Light", "Aqua"},
+    CurrentOption = "Default",
+    Callback = function(Option)
+        Rayfield:Notify("Theme changed to: " .. Option, 2)
+    end,
+})
+
+-- Extra Tab
+local InfoSection = ExtraTab:CreateSection("Information")
+
+local CreatorLabel = ExtraTab:CreateLabel("Created by: " .. PersonalizationUI.CreatorName)
+local VersionLabel = ExtraTab:CreateLabel("Version: 1.0.0")
+
+local DiscordButton = ExtraTab:CreateButton({
+    Name = "Copy Discord",
+    Callback = function()
+        setclipboard("discord.gg/goonhub")
+        Rayfield:Notify("Discord copied to clipboard!", 3)
+    end,
+})
+
+-- Set watermark
+Rayfield:SetWatermark("Goon Hub by " .. PersonalizationUI.CreatorName)
+
+print("[" .. PersonalizationUI.NameUI .. "] Loaded successfully! Created by " .. PersonalizationUI.CreatorName)
